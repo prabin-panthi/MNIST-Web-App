@@ -35,7 +35,7 @@ async function predict() {
     let formData = new FormData();
     formData.append("image", imageBlob, "digit.png");
 
-    let response = await fetch("http://127.0.0.1:5000/predict", {
+    let response = await fetch("https://prabin-handwriting-recognition.onrender.com/predict", {
         method: "POST", body: formData
     });
 
