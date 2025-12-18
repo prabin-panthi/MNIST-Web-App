@@ -4,4 +4,5 @@ joblib
 Pillow
 gunicorn
 scikit-learn
-tensorflow
+tensorflow-cpu==2.13.0
+gunicorn

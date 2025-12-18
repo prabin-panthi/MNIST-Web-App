@@ -6,7 +6,16 @@ from PIL.Image import Resampling
 
 app = Flask(__name__)
 
-model = keras.models.load_model("model_cnn.h5")
+model = None
+
+def get_model():
+    global model
+    if model is None:
+        print("Loading model...")
+        import tensorflow as tf
+        model = tf.keras.models.load_model('model_cnn.h5')
+        print("Model loaded successfully!")
+    return model
 
 def preprocess_for_mnist(img):
     img_array = np.array(img)
@@ -58,15 +67,24 @@ def home():
 @app.route("/predict", methods=["POST"])
 
 def predict():
-    file = request.files["image"]
-    img = Image.open(file).convert("L")
+    try:
+        model = get_model()
 
-    processed = preprocess_for_mnist(img)
+        file = request.files["image"]
+        img = Image.open(file).convert("L")
+
+        processed = preprocess_for_mnist(img)
     
-    pred = model.predict(processed)
-    digit = int(np.argmax(pred))
+        pred = model.predict(processed)
+        digit = int(np.argmax(pred))
 
-    return jsonify({"prediction": digit})
+        return jsonify({"prediction": digit})
+    
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
