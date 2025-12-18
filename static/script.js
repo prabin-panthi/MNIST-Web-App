@@ -35,7 +35,7 @@ function draw(event) {
 
     ctx.fillStyle = "black";
     ctx.beginPath();
-    ctx.arc(event.offsetX, event.offsetY, 22, 0, Math.PI * 2);
+    ctx.arc(event.offsetX, event.offsetY, 19, 0, Math.PI * 2);
     ctx.fill();
 }
 
@@ -73,7 +73,7 @@ function getTouchPosScaled(e) {
 function drawPoint(x, y) {
   ctx.fillStyle = "black";
   ctx.beginPath();
-  ctx.arc(x, y, 15, 0, Math.PI * 2);
+  ctx.arc(x, y, 12, 0, Math.PI * 2);
   ctx.fill();
 }
 

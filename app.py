@@ -1,13 +1,53 @@
 from flask import Flask, request, jsonify, render_template
 import numpy as np
-import joblib
-from PIL import Image
+from tensorflow import keras
+from PIL import Image, ImageFilter
 from PIL.Image import Resampling
-import io
 
 app = Flask(__name__)
 
-model = joblib.load("mnist_svm.sav")
+model = keras.models.load_model("model_cnn.h5")
+
+def preprocess_for_mnist(img):
+    img_array = np.array(img)
+    img_array = np.max(img_array) - img_array
+
+    rows = np.any(img_array, axis=1)
+    cols = np.any(img_array, axis=0)
+    
+    rmin, rmax = np.where(rows)[0][[0, -1]]
+    cmin, cmax = np.where(cols)[0][[0, -1]]
+
+    padding = 10
+    rmin = max(0, rmin - padding)
+    rmax = min(img_array.shape[0], rmax + padding)
+    cmin = max(0, cmin - padding)
+    cmax = min(img_array.shape[1], cmax + padding)
+    
+    cropped = img_array[rmin:rmax+1, cmin:cmax+1]
+    
+    cropped_img = Image.fromarray(cropped.astype('uint8'))
+    
+    h, w = cropped.shape
+
+    if h > w:
+        scale = 20 / h
+    else:
+        scale = 20 / w
+
+    new_h = int(h * scale)
+    new_w = int(w * scale)
+
+    resized = cropped_img.resize((new_w, new_h), Resampling.LANCZOS)
+
+    final_img = Image.new('L', (28, 28), 0)
+    final_img.paste(resized, ((28 - new_w) // 2, (28 - new_h) // 2))
+
+    final_img = final_img.filter(ImageFilter.GaussianBlur(radius=0.5))
+    
+    final_array = np.array(final_img).astype('float32') / 255.0
+
+    return final_array.reshape(1, 28, 28, 1)
 
 @app.route("/")
 
@@ -18,15 +58,13 @@ def home():
 @app.route("/predict", methods=["POST"])
 
 def predict():
+    file = request.files["image"]
+    img = Image.open(file).convert("L")
 
-    image_file = request.files["image"].read()
-    print(image_file)
-    img = Image.open(io.BytesIO(image_file)).convert("L").resize((28,28), Resampling.LANCZOS)
-    print(img)
-    img = np.array(img).reshape(1, -1)
-    img = img / 255.0
-    img = 1 - img
-    digit = int(model.predict(img))
+    processed = preprocess_for_mnist(img)
+    
+    pred = model.predict(processed)
+    digit = int(np.argmax(pred))
 
     return jsonify({"prediction": digit})
 
