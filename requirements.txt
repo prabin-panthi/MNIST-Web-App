@@ -4,3 +4,4 @@ joblib
 Pillow
 gunicorn
 scikit-learn
+tensorflow
